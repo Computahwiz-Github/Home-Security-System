@@ -1,0 +1,119 @@
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+
+const int buttonPin = 7; //button attached to pin 7
+const int ledPin = 13; //built-in led to pin 13
+const int redPin = 11; //red pin for dual-led to pin 11
+const int greenPin = 10; //green pin for dual-led to pin 10
+const int photoPin = 8; //photo-interrupter to pin 8
+const int buzzerPin = 4; //active buzzer to pin 4
+const int touchPin = 2; //touch-switch to pin 2
+bool armed = 1; //default active system
+bool breach = 0; //default no breach system status
+char displayTitle[] = "Security System"; //title for LCD
+char armedStatus[] = " *ARMED*    "; //armed status for LCD
+char unarmedStatus[] = " UNARMED  "; //unarmed status for LCD
+char breachStatus[] = "*BREACH*  "; //breach status for LCD
+char resetStatus[] = "RESETTING"; //reset status for LCD
+LiquidCrystal_I2C lcd(0x27,16,2); //definition of "lcd" as the LCD display with 16 columns and 2 rows
+
+void setup() {
+  pinMode(buttonPin,INPUT); //set buttonPin as INPUT
+  pinMode(ledPin, OUTPUT); //set ledPin as INPUT
+  pinMode(redPin, OUTPUT); //set redPin as INPUT
+  pinMode(greenPin, OUTPUT); //set greenPin as INPUT
+  pinMode(photoPin, INPUT); //set photoPin as INPUT
+  pinMode(buzzerPin, OUTPUT); //set buzzerPin as INPUT
+  pinMode(touchPin, INPUT); //set touchPin as INPUT
+  lcd.init(); //initialize LCD display
+  lcd.backlight(); //turn on LCD backlight
+
+  Serial.begin(9600); //initialize the serial monitor
+}
+
+void loop() {
+  bool buttonState = digitalRead(buttonPin); //read the value of pin 7
+  bool photoState = digitalRead(photoPin); //read the value of pin 8
+  bool touchState = digitalRead(touchPin); //read the value of pin 2
+
+  if (touchState==0){ //sets system to be armed or unarmed depending on value of touch-switch
+    armed = 1;
+  }
+  else{
+    armed = 0;
+  }
+
+  if (armed==1){ //activates security system
+    securitySystem(photoState, buttonState);
+  }
+  else{ //deactivates security system
+    breach = 0;
+    digitalWrite(ledPin, LOW);
+    analogWrite(greenPin, 0);
+    analogWrite(redPin, 0);
+    digitalWrite(buzzerPin, HIGH);
+    unarmedSecurityDisplay();
+  }
+}
+
+void securitySystem(bool photo, bool button){ //when activated; controls lights, buzzer, and listens for breach of system
+  if (photo==HIGH){ //breach system status
+    breach = 1;
+    digitalWrite(ledPin, LOW);
+    analogWrite(greenPin, 0);
+    analogWrite(redPin, 255);
+    digitalWrite(buzzerPin, LOW);
+    breachSecurityDisplay();
+    }
+    else if (button==LOW){ //resets system
+      digitalWrite(buzzerPin, HIGH);
+      digitalWrite(ledPin, LOW);
+      analogWrite(redPin, 0);
+      analogWrite(greenPin, 0);
+      resetSecurityDisplay();
+      delay(250);
+      analogWrite(greenPin, 255);
+      delay(250);
+      analogWrite(greenPin, 0);
+      delay(250);
+      analogWrite(greenPin, 255);
+      delay(250);
+      lcd.clear();
+      breach = 0;
+      }
+      else if (breach==0){ //default system status
+        digitalWrite(ledPin, HIGH);
+        analogWrite(greenPin, 255);
+        analogWrite(redPin, 0);
+        digitalWrite(buzzerPin, HIGH);
+        armedSecurityDisplay();
+        }
+}
+
+void armedSecurityDisplay(){ //display when system is armed
+  lcd.setCursor(0,0);
+  lcd.print(displayTitle);
+  lcd.setCursor(4,1);
+  lcd.print(armedStatus);
+}
+
+void unarmedSecurityDisplay(){ //display when system is unarmed
+  lcd.setCursor(0,0);
+  lcd.print(displayTitle);
+  lcd.setCursor(4,1);
+  lcd.print(unarmedStatus);
+}
+
+void breachSecurityDisplay(){ //display when system detects a breach
+  lcd.setCursor(0,0);
+  lcd.print(displayTitle);
+  lcd.setCursor(4,1);
+  lcd.print(breachStatus);
+}
+
+void resetSecurityDisplay(){ //display when system is resetting
+  lcd.setCursor(0,0);
+  lcd.print(displayTitle);
+  lcd.setCursor(4,1);
+  lcd.print(resetStatus);
+}
