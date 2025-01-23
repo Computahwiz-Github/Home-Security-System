@@ -1,2 +1,2 @@
 # Code Flowchart
-![Code Flowchart](images/Code Flowchart.png)
+![Code Flowchart](<Code Flowchart.png>)
